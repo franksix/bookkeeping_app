@@ -23,22 +23,25 @@ class _HomePageState extends State<HomePage> {
       amount: 88,
       isExpense: true,
       category: '交通',
-      date: DateTime(2026, 8, 24),
+      date: DateTime(2026, 8, 20),
     ),
     Record(
       amount: 5000,
       isExpense: false,
       category: '工资',
       note: '8月工资',
-      date: DateTime(2026, 8, 24),
+      date: DateTime(2026, 8, 1),
     ),
   ];
-
-  void _add(){
-    Navigator.push(
+  
+  Future<void> _add() async{
+    final r = await Navigator.push<Record>(
       context,
-      MaterialPageRoute(builder:(_)=>const AddEditPage())
+      MaterialPageRoute(builder: (_)=>const AddEditPage()),
     );
+    if (r != null){
+      setState(() => _records.add(r));
+    }
   }
 
   @override
