@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../models/record.dart';
+
 class AddEditPage extends StatefulWidget {
   const AddEditPage({super.key});
 
@@ -13,6 +15,11 @@ class _AddEditPageState extends State<AddEditPage> {
 
   bool _isExpense = true;
 
+  String _category = expenseCategories.first;
+
+  List<String> get _categories =>
+      _isExpense ? expenseCategories : incomeCategories;
+
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -20,7 +27,16 @@ class _AddEditPageState extends State<AddEditPage> {
   }
 
   void _switchType(bool isExpense) {
-    setState(() => _isExpense = isExpense);
+    setState((){
+      _isExpense=isExpense;
+      if(_isExpense){
+       _category=expenseCategories.first;
+      }else{
+        _category=incomeCategories.first;
+      }
+    }
+        // _isExpense = isExpense
+    );
   }
 
   Widget _chip(String label, bool selected, VoidCallback onTap) {
@@ -42,12 +58,12 @@ class _AddEditPageState extends State<AddEditPage> {
           children: [
             Row(
               children: [
-                _chip('支出', _isExpense, ()=>_switchType(true)),
-                const SizedBox(width: 12,),
-                _chip('收入', !_isExpense, ()=>_switchType(false)),
+                _chip('支出', _isExpense, () => _switchType(true)),
+                const SizedBox(width: 12),
+                _chip('收入', !_isExpense, () => _switchType(false)),
               ],
             ),
-            const SizedBox(height: 16,),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _amountCtrl,
               keyboardType: const TextInputType.numberWithOptions(
@@ -64,6 +80,18 @@ class _AddEditPageState extends State<AddEditPage> {
                 if (n == null || n <= 0) return '金额格式不对';
                 return null;
               },
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: _category,
+              decoration: const InputDecoration(
+                labelText: '分类',
+                border: OutlineInputBorder(),
+              ),
+              items: _categories
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (v) => setState(() => _category = v!),
             ),
           ],
         ),

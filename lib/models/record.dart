@@ -23,3 +23,6 @@ String formatDate(DateTime d){
 }
 
 String formatAmount(double v) => v.toStringAsFixed(2);
+
+const List<String> expenseCategories = ['餐饮','交通','购物','娱乐','居住','其他'];
+const List<String> incomeCategories = ['工资','奖金','理财','其他'];
