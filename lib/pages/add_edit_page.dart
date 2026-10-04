@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/record.dart';
 
 class AddEditPage extends StatefulWidget {
-  const AddEditPage({super.key});
+  final Record? record;
+  const AddEditPage({super.key,this.record});
 
   @override
   State<AddEditPage> createState() => _AddEditPageState();

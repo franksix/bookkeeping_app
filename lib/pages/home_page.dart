@@ -44,6 +44,13 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _edit(Record r) async{
+    final updated = await Navigator.push<Record>(
+  context,
+  MaterialPageRoute(builder: (_)=>AddEditPage(record: r,)),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,6 +85,7 @@ class _HomePageState extends State<HomePage> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        onTap: ()=> _edit(r),
       ),
     );
   }
