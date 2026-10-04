@@ -13,6 +13,8 @@ class _AddEditPageState extends State<AddEditPage> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
 
+  final _noteCtrl = TextEditingController();
+
   bool _isExpense = true;
 
   String _category = expenseCategories.first;
@@ -47,6 +49,18 @@ class _AddEditPageState extends State<AddEditPage> {
       lastDate: DateTime(2100),
     );
     if (picked != null) setState(() => _date = picked);
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final record = Record(
+      amount: double.parse(_amountCtrl.text.trim()),
+      isExpense: _isExpense,
+      category: _category,
+      note: _noteCtrl.text.trim(),
+      date: _date,
+    );
+    Navigator.pop(context,record);
   }
 
   Widget _chip(String label, bool selected, VoidCallback onTap) {
@@ -110,8 +124,19 @@ class _AddEditPageState extends State<AddEditPage> {
                 labelText: '日期',
                 border: OutlineInputBorder(),
               ),
-              child: Text(formatDate(_date)),),
-            )
+              child: Text(formatDate(_date)),
+              ),
+            ),
+            const SizedBox(height: 16,),
+            TextFormField(
+              controller: _noteCtrl,
+              decoration: const InputDecoration(
+                labelText: '备注（可选）',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 32,),
+            ElevatedButton(onPressed: _save,style: ElevatedButton.styleFrom(minimumSize:const Size.fromHeight(48)), child: const Text('保存'))
           ],
         ),
       ),
