@@ -23,6 +23,19 @@ class _AddEditPageState extends State<AddEditPage> {
   List<String> get _categories =>
       _isExpense ? expenseCategories : incomeCategories;
 
+  @override
+  void initState(){
+    super.initState();
+    final r = widget.record;
+    if (r!=null){
+      _isExpense = r.isExpense;
+      _category = r.category;
+      _date = r.date;
+      _amountCtrl.text = r.amount.toStringAsFixed(2);
+      _noteCtrl.text=r.note;
+    }
+  }
+
   DateTime _date = DateTime.now();
 
   @override
@@ -75,7 +88,7 @@ class _AddEditPageState extends State<AddEditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("记一笔")),
+      appBar: AppBar(title: Text(widget.record == null?"记一笔":'编辑账目')),
       body: Form(
         key: _formKey,
         child: ListView(
