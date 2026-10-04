@@ -20,6 +20,8 @@ class _AddEditPageState extends State<AddEditPage> {
   List<String> get _categories =>
       _isExpense ? expenseCategories : incomeCategories;
 
+  DateTime _date = DateTime.now();
+
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -27,16 +29,24 @@ class _AddEditPageState extends State<AddEditPage> {
   }
 
   void _switchType(bool isExpense) {
-    setState((){
-      _isExpense=isExpense;
-      if(_isExpense){
-       _category=expenseCategories.first;
-      }else{
-        _category=incomeCategories.first;
+    setState(() {
+      _isExpense = isExpense;
+      if (_isExpense) {
+        _category = expenseCategories.first;
+      } else {
+        _category = incomeCategories.first;
       }
-    }
-        // _isExpense = isExpense
+    });
+  }
+  
+  Future<void> _pickDate() async{
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
     );
+    if (picked != null) setState(() => _date = picked);
   }
 
   Widget _chip(String label, bool selected, VoidCallback onTap) {
@@ -93,6 +103,15 @@ class _AddEditPageState extends State<AddEditPage> {
                   .toList(),
               onChanged: (v) => setState(() => _category = v!),
             ),
+            const SizedBox(height: 16,),
+            InkWell(
+              onTap:_pickDate,
+              child: InputDecorator(decoration: const InputDecoration(
+                labelText: '日期',
+                border: OutlineInputBorder(),
+              ),
+              child: Text(formatDate(_date)),),
+            )
           ],
         ),
       ),
