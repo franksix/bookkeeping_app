@@ -11,40 +11,63 @@ class StatsPage extends StatefulWidget {
 
 class _StatsPageState extends State<StatsPage> {
   final List<Record> _records = [
-    Record(amount: 20,
-        isExpense: true,
-        category: '餐饮',
-        note: '午饭',
-        date: DateTime(2026, 8, 24)),
-    Record(amount: 88,
-        isExpense: true,
-        category: '交通',
-        date: DateTime(2026, 8, 20)),
-    Record(amount: 5000,
-        isExpense: false,
-        category: '工资',
-        note: '8月工资',
-        date: DateTime(2026, 8, 1)),
+    Record(
+      amount: 20,
+      isExpense: true,
+      category: '餐饮',
+      note: '午饭',
+      date: DateTime(2026, 8, 24),
+    ),
+    Record(
+      amount: 88,
+      isExpense: true,
+      category: '交通',
+      date: DateTime(2026, 8, 20),
+    ),
+    Record(
+      amount: 5000,
+      isExpense: false,
+      category: '工资',
+      note: '8月工资',
+      date: DateTime(2026, 8, 1),
+    ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final income = _records.where((r) => !r.isExpense).fold<double>(
-        0, (sum, r) => sum + r.amount);
-    final expense = _records.where((r) => r.isExpense).fold<double>(
-        0, (sum, r) => sum + r.amount);
+    final income = _records
+        .where((r) => !r.isExpense)
+        .fold<double>(0, (sum, r) => sum + r.amount);
+    final expense = _records
+        .where((r) => r.isExpense)
+        .fold<double>(0, (sum, r) => sum + r.amount);
     final balance = income - expense;
 
+    final byCategory = <String, double>{};
+    for (final r in _records.where((r) => r.isExpense)) {
+      byCategory[r.category] = (byCategory[r.category] ?? 0) + r.amount;
+    }
+    final sorted = byCategory.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return Scaffold(
-      appBar: AppBar(title: const Text('统计'),),
+      appBar: AppBar(title: const Text('统计')),
       body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
+        padding: const EdgeInsets.all(16),
+        children: [
           _totalCard('收入', income, Colors.green),
-      const SizedBox(height: 12),
-      _totalCard('支出', expense, Colors.redAccent),
-      const SizedBox(height: 22),
-        _totalCard('结余', balance, Colors.blue),
+          const SizedBox(height: 12),
+          _totalCard('支出', expense, Colors.redAccent),
+          const SizedBox(height: 22),
+          _totalCard('结余', balance, Colors.blue),
+
+          const SizedBox(height: 24),
+          const Text(
+            '支出分类占比',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 12),
+          ...sorted.map((e) => _categoryBar(e.key, e.value, expense)),
         ],
       ),
     );
@@ -54,16 +77,46 @@ class _StatsPageState extends State<StatsPage> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child:Row(
+        child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label,style: const TextStyle(fontSize: 16),),
+            Text(label, style: const TextStyle(fontSize: 16)),
             Text(
               '¥${formatAmount(value)}',
-              style: TextStyle(fontSize: 20,fontWeight: FontWeight.bold,color:color),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _categoryBar(String name, double value, double total) {
+    final percent = total == 0 ? 0.0 : value / total;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(name),
+              Text(
+                '¥${formatAmount(value)}  (${(percent * 100).toStringAsFixed(1)}%)',
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(value: percent, minHeight: 8),
+          ),
+        ],
       ),
     );
   }
