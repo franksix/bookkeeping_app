@@ -14,6 +14,27 @@ class Record {
     this.note = '',
     required this.date,
 });
+
+  Map<String,dynamic> toMap(){
+    return{
+      'id':id,
+      'amount':amount,
+      'is_expense':isExpense?1:0,
+      'category':category,
+      'note':note,
+      'date':formatDate(date),
+    };
+  }
+  factory Record.fromMap(Map<String,dynamic> map){
+    return Record(
+      id: map['id'] as int?,
+      amount: (map['amount'] as num).toDouble(),
+      isExpense: (map['is_expense'] as int) ==1,
+      category: map['category'] as String,
+      note: (map['note'] as String?) ?? '',
+      date: DateTime.parse(map['date'] as String),
+    );
+  }
 }
 
 String formatDate(DateTime d){

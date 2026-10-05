@@ -1,10 +1,10 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../models/record.dart';
 import 'add_edit_page.dart';
+import '../db/database_helper.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,30 +14,25 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final List<Record> _records = [
-    Record(
-      amount: 20,
-      isExpense: true,
-      category: '餐饮',
-      note: '午饭',
-      date: DateTime(2026, 8, 24),
-    ),
-    Record(
-      amount: 88,
-      isExpense: true,
-      category: '交通',
-      date: DateTime(2026, 8, 20),
-    ),
-    Record(
-      amount: 5000,
-      isExpense: false,
-      category: '工资',
-      note: '8月工资',
-      date: DateTime(2026, 8, 1),
-    ),
-  ];
-
+  List<Record> _records = [];
+  bool _loading = true;
   String? _selectedMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final records = await DatabaseHelper.instance.getRecords();
+    if (!mounted) return;
+    setState(() {
+      _records = records;
+      _selectedMonth ??= _monthKey(DateTime.now());
+      _loading = false;
+    });
+  }
 
   Future<void> _add() async {
     final r = await Navigator.push<Record>(
@@ -161,23 +156,25 @@ class _HomePageState extends State<HomePage> {
         .toList();
     return Scaffold(
       appBar: AppBar(title: const Text('记账本')),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: _monthSelector(months, selected),
-          ),
-          Expanded(
-            child: monthRecords.isEmpty
-                ? _EmptyTip(
-                    message: _records.isEmpty
-                        ? '还没有账目，点右下角 + 记一笔'
-                        : '这个月还没有账目，换个月份看看',
-                  )
-                : _buildList(monthRecords),
-          ),
-        ],
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: _monthSelector(months, selected),
+                ),
+                Expanded(
+                  child: monthRecords.isEmpty
+                      ? _EmptyTip(
+                          message: _records.isEmpty
+                              ? '还没有账目，点右下角 + 记一笔'
+                              : '这个月还没有账目，换个月份看看',
+                        )
+                      : _buildList(monthRecords),
+                ),
+              ],
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: _add,
         child: const Icon(Icons.add),
@@ -225,19 +222,20 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-class _EmptyTip extends StatelessWidget{
+class _EmptyTip extends StatelessWidget {
   final String message;
+
   const _EmptyTip({required this.message});
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.receipt_long,size:64,color: Colors.grey,),
-          const SizedBox(height: 12,),
-          Text(message,style: const TextStyle(color:Colors.grey),),
+          const Icon(Icons.receipt_long, size: 64, color: Colors.grey),
+          const SizedBox(height: 12),
+          Text(message, style: const TextStyle(color: Colors.grey)),
         ],
       ),
     );
