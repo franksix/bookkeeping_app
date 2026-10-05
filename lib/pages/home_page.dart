@@ -59,7 +59,20 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _delete(Record r) async {
-    setState(() => _records.remove(r));
+    final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx)=>AlertDialog(
+          title: const Text('删除这笔账？'),
+          content: Text('${r.category}  ¥${formatAmount(r.amount)}'),
+          actions: [
+            TextButton(onPressed: ()=>Navigator.pop(ctx,false), child: const Text('取消')),
+            TextButton(onPressed: ()=>Navigator.pop(ctx,true), child: const Text('删除')),
+          ],
+        ),
+    );
+    if (ok == true){
+      setState(()=> _records.remove(r));
+    }
   }
 
   @override
