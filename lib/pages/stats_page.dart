@@ -84,6 +84,7 @@ class _StatsPageState extends State<StatsPage> {
         children: [
           _monthSelector(months, selected),
           const SizedBox(height: 16,),
+          Text('本月共${monthRecords.length}笔账',style: const TextStyle(fontSize: 14,color: Colors.grey),),
           _totalCard('收入', income, Colors.green),
           const SizedBox(height: 12),
           _totalCard('支出', expense, Colors.redAccent),
