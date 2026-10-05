@@ -41,7 +41,7 @@ class _HomePageState extends State<HomePage> {
     if (saved == true) _load();
   }
 
-  Future<void> _edit(Record r) async {     
+  Future<void> _edit(Record r) async {
     final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_)=>AddEditPage(record: r,))
@@ -130,7 +130,8 @@ class _HomePageState extends State<HomePage> {
       ),
     );
     if (ok == true) {
-      setState(() => _records.remove(r));
+      await DatabaseHelper.instance.deleteRecord(r.id!);
+      _load();
     }
   }
 

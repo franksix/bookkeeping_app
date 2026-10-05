@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/record.dart';
+import '../db/database_helper.dart';
 
 class StatsPage extends StatefulWidget {
   const StatsPage({super.key});
@@ -10,30 +11,25 @@ class StatsPage extends StatefulWidget {
 }
 
 class _StatsPageState extends State<StatsPage> {
-  final List<Record> _records = [
-    Record(
-      amount: 20,
-      isExpense: true,
-      category: '餐饮',
-      note: '午饭',
-      date: DateTime(2026, 8, 24),
-    ),
-    Record(
-      amount: 88,
-      isExpense: true,
-      category: '交通',
-      date: DateTime(2026, 8, 20),
-    ),
-    Record(
-      amount: 5000,
-      isExpense: false,
-      category: '工资',
-      note: '8月工资',
-      date: DateTime(2026, 8, 1),
-    ),
-  ];
-
+  List<Record> _records = [];
+  bool _loading=true;
   String? _selectedMonth;
+
+  @override
+  void initState(){
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async{
+    final records = await DatabaseHelper.instance.getRecords();
+    if (!mounted) return;
+    setState(() {
+      _records = records;
+      _selectedMonth ??= _monthKey(DateTime.now());
+      _loading = false;
+    });
+  }
   
   String _monthKey(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}';
 

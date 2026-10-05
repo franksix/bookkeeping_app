@@ -52,4 +52,9 @@ class DatabaseHelper {
     final db = await database;
     return db.update('records', r.toMap(),where: 'id = ?',whereArgs: [r.id]);
   }
+
+  Future<int> deleteRecord(int id) async{
+    final db = await database;
+    return db.delete('records',where:'id=?',whereArgs: [id]);
+  }
 }
