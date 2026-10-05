@@ -37,15 +37,15 @@ class _StatsPageState extends State<StatsPage> {
   
   String _monthKey(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}';
 
-  Widget _monthSelector(List<String> moths, String selected) {
+  Widget _monthSelector(List<String> months, String selected) {
     return DropdownButtonFormField<String>(
-      value: selected,
+      initialValue: selected,
       decoration: const InputDecoration(
         labelText: "月份",
         border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.calendar_month),
       ),
-      items: moths
+      items: months
           .map((m) => DropdownMenuItem(value: m, child: Text(m)))
           .toList(),
       onChanged: (v) => setState(() => _selectedMonth = v),
@@ -62,16 +62,16 @@ class _StatsPageState extends State<StatsPage> {
       months.sort((a,b)=>b.compareTo(a));
     }
     final monthRecords = _records.where((r)=>_monthKey(r.date)==selected).toList();
-    final income = _records
+    final income = monthRecords
         .where((r) => !r.isExpense)
         .fold<double>(0, (sum, r) => sum + r.amount);
-    final expense = _records
+    final expense = monthRecords
         .where((r) => r.isExpense)
         .fold<double>(0, (sum, r) => sum + r.amount);
     final balance = income - expense;
 
     final byCategory = <String, double>{};
-    for (final r in _records.where((r) => r.isExpense)) {
+    for (final r in monthRecords.where((r) => r.isExpense)) {
       byCategory[r.category] = (byCategory[r.category] ?? 0) + r.amount;
     }
     final sorted = byCategory.entries.toList()
@@ -95,6 +95,12 @@ class _StatsPageState extends State<StatsPage> {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
+          if (sorted.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Text('这个月还没有支出记录',style: TextStyle(color: Colors.grey),),
+            )
+          else
           ...sorted.map((e) => _categoryBar(e.key, e.value, expense)),
         ],
       ),
