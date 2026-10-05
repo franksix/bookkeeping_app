@@ -167,7 +167,15 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: _monthSelector(months, selected),
           ),
-          Expanded(child: _buildList(monthRecords)),
+          Expanded(
+            child: monthRecords.isEmpty
+                ? _EmptyTip(
+                    message: _records.isEmpty
+                        ? '还没有账目，点右下角 + 记一笔'
+                        : '这个月还没有账目，换个月份看看',
+                  )
+                : _buildList(monthRecords),
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
@@ -212,6 +220,25 @@ class _HomePageState extends State<HomePage> {
           ),
           onTap: () => _edit(r),
         ),
+      ),
+    );
+  }
+}
+
+class _EmptyTip extends StatelessWidget{
+  final String message;
+  const _EmptyTip({required this.message});
+
+  @override
+  Widget build(BuildContext context){
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.receipt_long,size:64,color: Colors.grey,),
+          const SizedBox(height: 12,),
+          Text(message,style: const TextStyle(color:Colors.grey),),
+        ],
       ),
     );
   }
