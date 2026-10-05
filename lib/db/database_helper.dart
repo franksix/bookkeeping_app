@@ -41,4 +41,10 @@ class DatabaseHelper {
     final list = await db.query('records',orderBy: 'date DESC,id DESC');
     return list.map((e)=> Record.fromMap(e)).toList();
   }
+
+  Future<int> insertRecord(Record r) async{
+    final db = await database;
+    final map = r.toMap()..remove('id');
+    return db.insert('records', map);
+  }
 }

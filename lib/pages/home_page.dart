@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:sqflite/sqflite.dart';
 
+import '../db/database_helper.dart';
 import '../models/record.dart';
 import 'add_edit_page.dart';
-import '../db/database_helper.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -35,13 +34,11 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _add() async {
-    final r = await Navigator.push<Record>(
+    final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => const AddEditPage()),
     );
-    if (r != null) {
-      setState(() => _records.add(r));
-    }
+    if (saved == true) _load();
   }
 
   Map<String, List<Record>> _groupByDate(List<Record> records) {

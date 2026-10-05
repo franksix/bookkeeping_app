@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../db/database_helper.dart';
 import '../models/record.dart';
 
 class AddEditPage extends StatefulWidget {
@@ -65,18 +66,19 @@ class _AddEditPageState extends State<AddEditPage> {
     if (picked != null) setState(() => _date = picked);
   }
 
-  Future<void> _save() async {
+  Future<void> _save() async{
     if (!_formKey.currentState!.validate()) return;
     final record = Record(
       amount: double.parse(_amountCtrl.text.trim()),
       isExpense: _isExpense,
       category: _category,
       note: _noteCtrl.text.trim(),
-      date: _date,
+      date:_date,
     );
-    Navigator.pop(context,record);
+    await DatabaseHelper.instance.insertRecord(record);
+    if (!mounted) return;
+    Navigator.pop(context,true);
   }
-
   Widget _chip(String label, bool selected, VoidCallback onTap) {
     return ChoiceChip(
       label: Text(label),
