@@ -37,6 +37,8 @@ class _HomePageState extends State<HomePage> {
     ),
   ];
 
+  String? _selectedMonth;
+
   Future<void> _add() async {
     final r = await Navigator.push<Record>(
       context,
@@ -47,37 +49,65 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Map<String,List<Record>> _groupByDate(List<Record> records){
-    final grouped = <String,List<Record>>{};
-    for (final r in records){
-      grouped.putIfAbsent(formatDate(r.date),()=><Record>[]).add(r);
+  Map<String, List<Record>> _groupByDate(List<Record> records) {
+    final grouped = <String, List<Record>>{};
+    for (final r in records) {
+      grouped.putIfAbsent(formatDate(r.date), () => <Record>[]).add(r);
     }
     return grouped;
   }
 
-  Widget _buildList(List<Record> records){
+  Widget _buildList(List<Record> records) {
     final grouped = _groupByDate(records);
-    final children = <Widget> [];
-    grouped.forEach((date,rs){
-      children.add(_buildDateHeader(date,rs));
+    final children = <Widget>[];
+    grouped.forEach((date, rs) {
+      children.add(_buildDateHeader(date, rs));
       children.addAll(rs.map(_buildItem));
     });
     return ListView(
-      padding: const EdgeInsets.only(bottom:88),
+      padding: const EdgeInsets.only(bottom: 88),
       children: children,
     );
   }
 
-  Widget _buildDateHeader(String date,List<Record> records){
+  Widget _buildDateHeader(String date, List<Record> records) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
       child: Row(
         children: [
-          Text(date,style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold,color:Colors.grey),),
+          Text(
+            date,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey,
+            ),
+          ),
           const SizedBox(width: 8),
-          Text('共${records.length}笔',style:const TextStyle(fontSize: 12,color: Colors.grey)),
+          Text(
+            '共${records.length}笔',
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
         ],
       ),
+    );
+  }
+
+  String _monthKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}';
+
+  Widget _monthSelector(List<String> months, String selected) {
+    return DropdownButtonFormField<String>(
+      value: selected,
+      decoration: const InputDecoration(
+        labelText: '月份',
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.calendar_month),
+      ),
+      items: months
+          .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+          .toList(),
+      onChanged: (v) => setState(() => _selectedMonth = v),
     );
   }
 
@@ -96,26 +126,50 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _delete(Record r) async {
     final ok = await showDialog<bool>(
-        context: context,
-        builder: (ctx)=>AlertDialog(
-          title: const Text('删除这笔账？'),
-          content: Text('${r.category}  ¥${formatAmount(r.amount)}'),
-          actions: [
-            TextButton(onPressed: ()=>Navigator.pop(ctx,false), child: const Text('取消')),
-            TextButton(onPressed: ()=>Navigator.pop(ctx,true), child: const Text('删除')),
-          ],
-        ),
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('删除这笔账？'),
+        content: Text('${r.category}  ¥${formatAmount(r.amount)}'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
     );
-    if (ok == true){
-      setState(()=> _records.remove(r));
+    if (ok == true) {
+      setState(() => _records.remove(r));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final selected = _selectedMonth ?? _monthKey(DateTime.now());
+    final months = _records.map((r) => _monthKey(r.date)).toSet().toList()
+      ..sort((a, b) => b.compareTo(a));
+    if (!months.contains(selected)) {
+      months.add(selected);
+      months.sort((a, b) => b.compareTo(a));
+    }
+    final monthRecords = _records
+        .where((r) => _monthKey(r.date) == selected)
+        .toList();
     return Scaffold(
       appBar: AppBar(title: const Text('记账本')),
-      body: _buildList(_records),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: _monthSelector(months, selected),
+          ),
+          Expanded(child: _buildList(monthRecords)),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _add,
         child: const Icon(Icons.add),
