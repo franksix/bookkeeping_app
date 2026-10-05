@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
@@ -45,6 +47,40 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Map<String,List<Record>> _groupByDate(List<Record> records){
+    final grouped = <String,List<Record>>{};
+    for (final r in records){
+      grouped.putIfAbsent(formatDate(r.date),()=><Record>[]).add(r);
+    }
+    return grouped;
+  }
+
+  Widget _buildList(List<Record> records){
+    final grouped = _groupByDate(records);
+    final children = <Widget> [];
+    grouped.forEach((date,rs){
+      children.add(_buildDateHeader(date,rs));
+      children.addAll(rs.map(_buildItem));
+    });
+    return ListView(
+      padding: const EdgeInsets.only(bottom:88),
+      children: children,
+    );
+  }
+
+  Widget _buildDateHeader(String date,List<Record> records){
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Row(
+        children: [
+          Text(date,style: const TextStyle(fontSize: 14,fontWeight: FontWeight.bold,color:Colors.grey),),
+          const SizedBox(width: 8),
+          Text('共${records.length}笔',style:const TextStyle(fontSize: 12,color: Colors.grey)),
+        ],
+      ),
+    );
+  }
+
   Future<void> _edit(Record r) async {
     final updated = await Navigator.push<Record>(
       context,
@@ -79,10 +115,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('记账本')),
-      body: ListView.builder(
-        itemCount: _records.length,
-        itemBuilder: (context, index) => _buildItem(_records[index]),
-      ),
+      body: _buildList(_records),
       floatingActionButton: FloatingActionButton(
         onPressed: _add,
         child: const Icon(Icons.add),
