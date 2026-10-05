@@ -69,13 +69,18 @@ class _AddEditPageState extends State<AddEditPage> {
   Future<void> _save() async{
     if (!_formKey.currentState!.validate()) return;
     final record = Record(
-      amount: double.parse(_amountCtrl.text.trim()),
+      id: widget.record?.id,
+      amount:double.parse(_amountCtrl.text.trim()),
       isExpense: _isExpense,
       category: _category,
       note: _noteCtrl.text.trim(),
-      date:_date,
+      date: _date,
     );
-    await DatabaseHelper.instance.insertRecord(record);
+    if (record.id ==null){
+      await DatabaseHelper.instance.insertRecord(record);
+    }else{
+      await DatabaseHelper.instance.updateRecord(record);
+    }
     if (!mounted) return;
     Navigator.pop(context,true);
   }

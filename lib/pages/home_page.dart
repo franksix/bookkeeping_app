@@ -41,6 +41,14 @@ class _HomePageState extends State<HomePage> {
     if (saved == true) _load();
   }
 
+  Future<void> _edit(Record r) async {     
+    final saved = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_)=>AddEditPage(record: r,))
+    );
+    if (saved == true) _load();
+  }
+
   Map<String, List<Record>> _groupByDate(List<Record> records) {
     final grouped = <String, List<Record>>{};
     for (final r in records) {
@@ -101,19 +109,6 @@ class _HomePageState extends State<HomePage> {
           .toList(),
       onChanged: (v) => setState(() => _selectedMonth = v),
     );
-  }
-
-  Future<void> _edit(Record r) async {
-    final updated = await Navigator.push<Record>(
-      context,
-      MaterialPageRoute(builder: (_) => AddEditPage(record: r)),
-    );
-    if (updated != null) {
-      setState(() {
-        final i = _records.indexOf(r);
-        if (i >= 0) _records[i] = updated;
-      });
-    }
   }
 
   Future<void> _delete(Record r) async {

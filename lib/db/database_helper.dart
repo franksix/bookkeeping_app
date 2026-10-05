@@ -47,4 +47,9 @@ class DatabaseHelper {
     final map = r.toMap()..remove('id');
     return db.insert('records', map);
   }
+
+  Future<int> updateRecord(Record r) async{
+    final db = await database;
+    return db.update('records', r.toMap(),where: 'id = ?',whereArgs: [r.id]);
+  }
 }
