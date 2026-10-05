@@ -33,8 +33,35 @@ class _StatsPageState extends State<StatsPage> {
     ),
   ];
 
+  String? _selectedMonth;
+  
+  String _monthKey(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}';
+
+  Widget _monthSelector(List<String> moths, String selected) {
+    return DropdownButtonFormField<String>(
+      value: selected,
+      decoration: const InputDecoration(
+        labelText: "月份",
+        border: OutlineInputBorder(),
+        prefixIcon: Icon(Icons.calendar_month),
+      ),
+      items: moths
+          .map((m) => DropdownMenuItem(value: m, child: Text(m)))
+          .toList(),
+      onChanged: (v) => setState(() => _selectedMonth = v),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final selected = _selectedMonth ?? _monthKey(DateTime.now());
+    final months = _records.map((r)=>_monthKey(r.date)).toSet().toList()
+    ..sort((a,b)=>b.compareTo(a));
+    if (!months.contains(selected)){
+      months.add(selected);
+      months.sort((a,b)=>b.compareTo(a));
+    }
+    final monthRecords = _records.where((r)=>_monthKey(r.date)==selected).toList();
     final income = _records
         .where((r) => !r.isExpense)
         .fold<double>(0, (sum, r) => sum + r.amount);
@@ -55,12 +82,13 @@ class _StatsPageState extends State<StatsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          _monthSelector(months, selected),
+          const SizedBox(height: 16,),
           _totalCard('收入', income, Colors.green),
           const SizedBox(height: 12),
           _totalCard('支出', expense, Colors.redAccent),
-          const SizedBox(height: 22),
+          const SizedBox(height: 12),
           _totalCard('结余', balance, Colors.blue),
-
           const SizedBox(height: 24),
           const Text(
             '支出分类占比',
