@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/record.dart';
 import '../db/database_helper.dart';
+import '../widgets/theme_toggle_button.dart';
 
 class StatsPage extends StatefulWidget {
   const StatsPage({super.key});
@@ -12,16 +13,16 @@ class StatsPage extends StatefulWidget {
 
 class _StatsPageState extends State<StatsPage> {
   List<Record> _records = [];
-  bool _loading=true;
+  bool _loading = true;
   String? _selectedMonth;
 
   @override
-  void initState(){
+  void initState() {
     super.initState();
     _load();
   }
 
-  Future<void> _load() async{
+  Future<void> _load() async {
     final records = await DatabaseHelper.instance.getRecords();
     if (!mounted) return;
     setState(() {
@@ -30,8 +31,9 @@ class _StatsPageState extends State<StatsPage> {
       _loading = false;
     });
   }
-  
-  String _monthKey(DateTime d)=>'${d.year}-${d.month.toString().padLeft(2,'0')}';
+
+  String _monthKey(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}';
 
   Widget _monthSelector(List<String> months, String selected) {
     return DropdownButtonFormField<String>(
@@ -51,13 +53,15 @@ class _StatsPageState extends State<StatsPage> {
   @override
   Widget build(BuildContext context) {
     final selected = _selectedMonth ?? _monthKey(DateTime.now());
-    final months = _records.map((r)=>_monthKey(r.date)).toSet().toList()
-    ..sort((a,b)=>b.compareTo(a));
-    if (!months.contains(selected)){
+    final months = _records.map((r) => _monthKey(r.date)).toSet().toList()
+      ..sort((a, b) => b.compareTo(a));
+    if (!months.contains(selected)) {
       months.add(selected);
-      months.sort((a,b)=>b.compareTo(a));
+      months.sort((a, b) => b.compareTo(a));
     }
-    final monthRecords = _records.where((r)=>_monthKey(r.date)==selected).toList();
+    final monthRecords = _records
+        .where((r) => _monthKey(r.date) == selected)
+        .toList();
     final income = monthRecords
         .where((r) => !r.isExpense)
         .fold<double>(0, (sum, r) => sum + r.amount);
@@ -74,13 +78,19 @@ class _StatsPageState extends State<StatsPage> {
       ..sort((a, b) => b.value.compareTo(a.value));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('统计')),
+      appBar: AppBar(
+        title: const Text('统计'),
+        actions: const [ThemeToggleButton()],
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           _monthSelector(months, selected),
-          const SizedBox(height: 16,),
-          Text('本月共${monthRecords.length}笔账',style: const TextStyle(fontSize: 14,color: Colors.grey),),
+          const SizedBox(height: 16),
+          Text(
+            '本月共${monthRecords.length}笔账',
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
           _totalCard('收入', income, Colors.green),
           const SizedBox(height: 12),
           _totalCard('支出', expense, Colors.redAccent),
@@ -95,10 +105,10 @@ class _StatsPageState extends State<StatsPage> {
           if (sorted.isEmpty)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
-              child: Text('这个月还没有支出记录',style: TextStyle(color: Colors.grey),),
+              child: Text('这个月还没有支出记录', style: TextStyle(color: Colors.grey)),
             )
           else
-          ...sorted.map((e) => _categoryBar(e.key, e.value, expense)),
+            ...sorted.map((e) => _categoryBar(e.key, e.value, expense)),
         ],
       ),
     );

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
+import '../widgets/theme_toggle_button.dart';
+import '../widgets/reminder_sheet.dart';
 import '../db/database_helper.dart';
 import '../models/record.dart';
+import '../services/reminder_service.dart';
 import 'add_edit_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -16,6 +19,10 @@ class _HomePageState extends State<HomePage> {
   List<Record> _records = [];
   bool _loading = true;
   String? _selectedMonth;
+
+  // ===== 批量删除状态 =====
+  bool _selectionMode = false;
+  final Set<int> _selectedIds = {};
 
   @override
   void initState() {
@@ -44,7 +51,7 @@ class _HomePageState extends State<HomePage> {
   Future<void> _edit(Record r) async {
     final saved = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(builder: (_)=>AddEditPage(record: r,))
+      MaterialPageRoute(builder: (_) => AddEditPage(record: r)),
     );
     if (saved == true) _load();
   }
@@ -135,6 +142,84 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // ===== 批量删除相关逻辑 =====
+
+  void _enterSelectionMode([Record? initial]) {
+    setState(() {
+      _selectionMode = true;
+      _selectedIds.clear();
+      final id = initial?.id;
+      if (id != null) _selectedIds.add(id);
+    });
+  }
+
+  void _exitSelectionMode() {
+    if (!_selectionMode) return;
+    setState(() {
+      _selectionMode = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelect(Record r) {
+    final id = r.id;
+    if (id == null) return;
+    setState(() {
+      if (!_selectedIds.remove(id)) {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  void _toggleSelectAll(List<Record> visible) {
+    setState(() {
+      final ids = visible.map((r) => r.id).whereType<int>().toSet();
+      if (ids.isNotEmpty && _selectedIds.containsAll(ids)) {
+        _selectedIds.removeAll(ids);
+      } else {
+        _selectedIds.addAll(ids);
+      }
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    if (_selectedIds.isEmpty) return;
+    final count = _selectedIds.length;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('删除选中的 $count 笔账？'),
+        content: const Text('删除后不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await DatabaseHelper.instance.deleteRecords(_selectedIds.toList());
+    _exitSelectionMode();
+    await _load();
+  }
+
+  // ===== 提醒相关 =====
+
+  bool get _todayHasRecord {
+    final today = formatDate(DateTime.now());
+    return _records.any((r) => formatDate(r.date) == today);
+  }
+
+  Future<void> _openReminderSheet() async {
+    await ReminderSheet.show(context);
+    if (mounted) setState(() {}); // 刷新铃铛图标
+  }
+
   @override
   Widget build(BuildContext context) {
     final selected = _selectedMonth ?? _monthKey(DateTime.now());
@@ -147,28 +232,80 @@ class _HomePageState extends State<HomePage> {
     final monthRecords = _records
         .where((r) => _monthKey(r.date) == selected)
         .toList();
+
+    // 只在看当前月、且今天还没记账时，显示应用内提示
+    final showTodayTip = !_loading &&
+        selected == _monthKey(DateTime.now()) &&
+        !_todayHasRecord;
+
+    final reminderOn = ReminderService.instance.enabled;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('记账本')),
+      appBar: _selectionMode
+          ? AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          tooltip: '退出多选',
+          onPressed: _exitSelectionMode,
+        ),
+        title: Text('已选 ${_selectedIds.length} 项'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.select_all),
+            tooltip: '全选 / 取消全选',
+            onPressed: () => _toggleSelectAll(monthRecords),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            tooltip: '删除',
+            onPressed: _selectedIds.isEmpty ? null : _deleteSelected,
+          ),
+        ],
+      )
+          : AppBar(
+        title: const Text('记账本'),
+        actions: [
+          IconButton(
+            icon: Icon(
+              reminderOn
+                  ? Icons.notifications_active
+                  : Icons.notifications_none,
+            ),
+            tooltip: '每日提醒',
+            onPressed: _openReminderSheet,
+          ),
+          if (monthRecords.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.checklist),
+              tooltip: '批量删除',
+              onPressed: () => _enterSelectionMode(),
+            ),
+          const ThemeToggleButton(),
+        ],
+      ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: _monthSelector(months, selected),
-                ),
-                Expanded(
-                  child: monthRecords.isEmpty
-                      ? _EmptyTip(
-                          message: _records.isEmpty
-                              ? '还没有账目，点右下角 + 记一笔'
-                              : '这个月还没有账目，换个月份看看',
-                        )
-                      : _buildList(monthRecords),
-                ),
-              ],
-            ),
-      floatingActionButton: FloatingActionButton(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: _monthSelector(months, selected),
+          ),
+          if (showTodayTip) _TodayTip(onTap: _add),
+          Expanded(
+            child: monthRecords.isEmpty
+                ? _EmptyTip(
+              message: _records.isEmpty
+                  ? '还没有账目，点右下角 + 记一笔'
+                  : '这个月还没有账目，换个月份看看',
+            )
+                : _buildList(monthRecords),
+          ),
+        ],
+      ),
+      floatingActionButton: _selectionMode
+          ? null
+          : FloatingActionButton(
         onPressed: _add,
         child: const Icon(Icons.add),
       ),
@@ -178,8 +315,13 @@ class _HomePageState extends State<HomePage> {
   Widget _buildItem(Record r) {
     final sign = r.isExpense ? '-' : '+';
     final color = r.isExpense ? Colors.redAccent : Colors.green;
+    final scheme = Theme.of(context).colorScheme;
+    final id = r.id;
+    final isSelected = id != null && _selectedIds.contains(id);
+
     return Slidable(
       key: ValueKey(r),
+      enabled: !_selectionMode,
       endActionPane: ActionPane(
         motion: const DrawerMotion(),
         children: [
@@ -194,8 +336,14 @@ class _HomePageState extends State<HomePage> {
       ),
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        color: isSelected ? scheme.primary.withOpacity(0.08) : null,
         child: ListTile(
-          leading: CircleAvatar(child: Text(r.category.substring(0, 1))),
+          leading: _selectionMode
+              ? Checkbox(
+            value: isSelected,
+            onChanged: (_) => _toggleSelect(r),
+          )
+              : CircleAvatar(child: Text(r.category.substring(0, 1))),
           title: Text(r.category),
           subtitle: Text(
             '${formatDate(r.date)}${r.note.isEmpty ? '' : '·${r.note}'}',
@@ -208,7 +356,47 @@ class _HomePageState extends State<HomePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-          onTap: () => _edit(r),
+          onTap: _selectionMode ? () => _toggleSelect(r) : () => _edit(r),
+          onLongPress: _selectionMode ? null : () => _enterSelectionMode(r),
+        ),
+      ),
+    );
+  }
+}
+
+class _TodayTip extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _TodayTip({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Material(
+        color: scheme.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                Icon(Icons.edit_note, color: scheme.primary),
+                const SizedBox(width: 8),
+                const Expanded(child: Text('今天还没记账，现在记一笔？')),
+                Text(
+                  '去记账',
+                  style: TextStyle(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

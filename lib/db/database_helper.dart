@@ -19,10 +19,10 @@ class DatabaseHelper {
     final dir = await getDatabasesPath();
     final path = '$dir/bookkeeping.db';
     return openDatabase(
-        path,
-        version: 1,
-      onCreate: (db,version) async{
-          await db.execute('''
+      path,
+      version: 1,
+      onCreate: (db, version) async {
+        await db.execute('''
            CREATE TABLE records(
            id INTEGER PRIMARY KEY AUTOINCREMENT,
            amount REAL NOT NULL,
@@ -36,25 +36,32 @@ class DatabaseHelper {
     );
   }
 
-  Future<List<Record>> getRecords() async{
+  Future<List<Record>> getRecords() async {
     final db = await database;
-    final list = await db.query('records',orderBy: 'date DESC,id DESC');
-    return list.map((e)=> Record.fromMap(e)).toList();
+    final list = await db.query('records', orderBy: 'date DESC,id DESC');
+    return list.map((e) => Record.fromMap(e)).toList();
   }
 
-  Future<int> insertRecord(Record r) async{
+  Future<int> insertRecord(Record r) async {
     final db = await database;
     final map = r.toMap()..remove('id');
     return db.insert('records', map);
   }
 
-  Future<int> updateRecord(Record r) async{
+  Future<int> updateRecord(Record r) async {
     final db = await database;
-    return db.update('records', r.toMap(),where: 'id = ?',whereArgs: [r.id]);
+    return db.update('records', r.toMap(), where: 'id = ?', whereArgs: [r.id]);
   }
 
-  Future<int> deleteRecord(int id) async{
+  Future<int> deleteRecord(int id) async {
     final db = await database;
-    return db.delete('records',where:'id=?',whereArgs: [id]);
+    return db.delete('records', where: 'id=?', whereArgs: [id]);
+  }
+
+  Future<int> deleteRecords(List<int> ids) async {
+    if (ids.isEmpty) return 0;
+    final db = await database;
+    final placeholders = List.filled(ids.length, '?').join(',');
+    return db.delete('records', where: 'id IN ($placeholders)', whereArgs: ids);
   }
 }
